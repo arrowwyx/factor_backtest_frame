@@ -22,4 +22,3 @@ Alpha_2.set_trading_price(close.data)
 
 ic_test(Alpha_2, save=True)
 group_test(Alpha_2, save=True)
-
