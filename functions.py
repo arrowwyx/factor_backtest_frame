@@ -3,7 +3,6 @@
 import pandas as pd
 import numpy as np
 import logging
-from datetime import datetime
 import warnings
 from class_factor import Factor
 warnings.filterwarnings("ignore")
@@ -45,11 +44,11 @@ def ts_argmax(f: Factor, window):
 
 def rank(f: Factor):
     """
-    截面排序，返回排名，参数中的ascending指降序排名，method='min'指值相同时，取较小的作为并列排名。例如并列第二，而不是并列第三。
+    截面排序，返回排名，参数中的ascending指升序排名，method='min'指值相同时，取较小的作为并列排名。例如并列第二，而不是并列第三。
     :param f:
     :return:
     """
-    ranked_data = f.data.rank(axis=1, ascending=False, method='min')
+    ranked_data = f.data.rank(axis=1, method='min')
     ranked_data.index = pd.to_datetime(ranked_data.index)
 
     ranked_expr = f"rank({f.expr})"
@@ -60,19 +59,19 @@ def rank(f: Factor):
 def where(condition, x, y):
     """
     三元表达式：如果条件满足，则结果为x，否则结果为y
-    :param condition: boolean
-    :param x: Factor
-    :param y: Factor
+    :param condition: Factor or boolean
+    :param x: Factor or numeric value
+    :param y: Factor or numeric value
     :return:
     """
-    # 确保两个DataFrame的行和列是对齐的
-    if not (x.index.equals(y.index) and x.columns.equals(y.columns)):
-        raise ValueError("两个DataFrame的索引（行）和列必须对齐")
-    result_data = pd.DataFrame(np.where(condition, x.data, y.data), index=x.data.index,
-                               columns=x.data.columns)
-    result_expr = f"(condition ? {x.expr} : {y.expr})"
-
-    return Factor(result_data, result_expr)
+    if isinstance(condition, Factor) and isinstance(y, Factor):
+        result_data = x.data.where(condition.data, y.data)
+        result_expr = f'{condition.expr} ? {x.expr} : {y.expr}'
+        return Factor(result_data, result_expr)
+    elif isinstance(condition, Factor) and isinstance(y, int):
+        result_data = x.data.where(condition.data, y)
+        result_expr = f'{condition.expr} ? {x.expr} : {str(y)}'
+        return Factor(result_data, result_expr)
 
 
 def correlation(f1: Factor, f2: Factor, window):
@@ -109,8 +108,71 @@ def correlation(f1: Factor, f2: Factor, window):
 def delta(f: Factor, delay):
     """计算当天的值减去delay天前的值"""
     data = f.data - f.data.shift(delay)
-    expr = f'delay({f.expr}, {delay})'
+    expr = f'delta({f.expr}, {delay})'
     return Factor(data, expr)
+
+
+def log(factor: Factor):
+    """
+    计算 Factor 实例的因子值的自然对数。
+    """
+    if not isinstance(factor, Factor):
+        raise TypeError("The argument must be a Factor instance")
+
+    new_data = np.log(factor.data)
+    new_expr = f'log({factor.expr})'
+    return Factor(new_data, new_expr, factor.trading_price)
+
+
+def ts_rank(factor: Factor, window: int):
+    """
+    计算时序上的排名
+    """
+    if not isinstance(factor, Factor):
+        raise TypeError("The argument must be a Factor instance")
+    new_data = factor.data.rolling(window).rank(axis=0, ascending=True)
+    new_expr = f'ts_rank({factor.expr}, {window})'
+    return Factor(new_data, new_expr, factor.trading_price)
+
+
+def abs(factor: Factor):
+    """
+    绝对值函数
+    :param factor: Factor
+    :return: Factor
+    """
+    if not isinstance(factor, Factor):
+        raise TypeError("The argument must be a Factor instance")
+    new_data = factor.data.abs()
+    new_expr = f'abs({factor.expr})'
+    return Factor(new_data, new_expr, factor.trading_price)
+
+
+def ma(factor: Factor, window: int):
+    """
+    移动平均
+    :param factor:
+    :param window: 移动平均窗口长度
+    :return:
+    """
+    if not isinstance(factor, Factor):
+        raise TypeError("The argument must be a Factor instance")
+    new_data = factor.data.rolling(window).mean()
+    new_expr = f'ma({factor.expr}, {window})'
+    return Factor(new_data, new_expr, factor.trading_price)
+
+
+def sign(factor: Factor):
+    """
+    指示函数（大于0则为1，小于0则为-1）
+    :param factor:
+    :return:
+    """
+    if not isinstance(factor, Factor):
+        raise TypeError("The argument must be a Factor instance")
+    new_data = np.sign(factor.data)
+    new_expr = f'sign({factor.expr})'
+    return Factor(new_data, new_expr, factor.trading_price)
 
 
 # if __name__ == '__main__':

@@ -1,8 +1,6 @@
 import pandas as pd
 import numpy as np
 import logging
-from datetime import datetime
-
 
 class Factor:
     """
@@ -74,6 +72,34 @@ class Factor:
         else:
             raise TypeError("Unsupported type for division")
         return Factor(new_data, new_expr, self.trading_price)
+
+    def __lt__(self, other):
+        """
+        小于比较操作。
+
+        参数:
+        other: 与Factor实例比较的对象，可以是数值、Series或DataFrame,Factor。
+
+        """
+        if isinstance(other, (int, float, pd.DataFrame)):
+            return self.data < other
+        elif isinstance(other, Factor):
+            return Factor(self.data < other.data, f'{self.data} < {other.expr}')
+
+    def __gt__(self, other):
+        """
+        大于比较操作。
+
+        参数:
+        other: 与Factor实例比较的对象，可以是数值、Series或DataFrame,Factor。
+
+        返回:
+        pd.DataFrame: 布尔型DataFrame，表示哪些元素大于other。
+        """
+        if isinstance(other, (int, float, pd.DataFrame)):
+            return self.data > other
+        elif isinstance(other, Factor):
+            return Factor(self.data > other.data, f'{self.data} > {other.expr}')
 
     def set_trading_price(self, trading_price):
         """

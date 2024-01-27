@@ -4,7 +4,7 @@ from new_alphalens import tears
 from new_alphalens import utils
 import pandas as pd
 import numpy as np
-from datetime import datetime
+import datetime
 from class_factor import Factor
 from functions import *
 import matplotlib.pyplot as plt
@@ -19,16 +19,20 @@ def ic_test(f: Factor, save=False):
     :return:
     """
     price = f.trading_price
-    factor_return = utils.get_clean_factor_and_forward_returns(f.data.stack(), price)
+    factor_return = utils.get_clean_factor_and_forward_returns(f.data.stack(), price, max_loss=0.99)
     IC = performance.factor_information_coefficient(factor_return)
     ax = plotting.plot_ic_ts(IC)
     fig = ax[0].get_figure()  # 从任一轴对象获取图形对象
     fig.suptitle(f'{f.expr}')  # 设置总标题
+
     if save:
-        if 'ic_plots' not in os.listdir():
-            os.makedirs('ic_plots')
-        plt.savefig(f'ic_plots/{f.expr}.png')
-    plt.show()
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        dirname = 'ic_plots'
+        if dirname not in os.listdir():
+            os.makedirs(dirname)
+        plt.savefig(f'{dirname}/ic_{timestamp}.png')
+    else:
+        plt.show()
 
 
 def group_test(f: Factor, save=False):
@@ -40,7 +44,7 @@ def group_test(f: Factor, save=False):
     :return:
     """
     price = f.trading_price
-    factor_return = utils.get_clean_factor_and_forward_returns(f.data.stack(), price)
+    factor_return = utils.get_clean_factor_and_forward_returns(f.data.stack(), price, max_loss=0.99)
     mean_quant_ret_bydate, std_quant_daily = performance.mean_return_by_quantile(
         factor_return,
         by_date=True,
@@ -56,11 +60,13 @@ def group_test(f: Factor, save=False):
     fig.suptitle(f'{f.expr}')  # 设置总标题
 
     if save:
-        if 'group_test_plots' not in os.listdir():
-            os.makedirs('group_test_plots')
-        plt.savefig(f'group_test_plots/{f.expr}.png')
-
-    plt.show()
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        dirname = 'group_test_plots'
+        if dirname not in os.listdir():
+            os.makedirs(dirname)
+        plt.savefig(f'{dirname}/group_test_{timestamp}.png')
+    else:
+        plt.show()
 
 
 def small_summary(f: Factor):
